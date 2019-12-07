@@ -31,13 +31,13 @@ namespace EFCoreComputedColumnProblem
     {
         public void Configure(EntityTypeBuilder<Taxes> builder)
         {
-            builder.OwnsOne(t => t.Percentage, b =>
+            builder.OwnsOne(t => t.Percentage, tp =>
             {
-                b.Property(v => v.Value)
-                    .HasColumnName("Percentage")
+                tp.Property(p => p.Value)
+                    .HasColumnName(nameof(Taxes.Percentage))
                     .IsRequired();
 
-                b.Property(p => p.Multiplier)
+                tp.Property(p => p.Multiplier)
                     .HasColumnType("decimal(3,2)")
                     .HasColumnName(nameof(TaxesPercentage.Multiplier))
                     .HasComputedColumnSql("(CONVERT([decimal](3,2),CONVERT([decimal](3,0),[Percentage])/(100.00)+(1))) PERSISTED");
@@ -49,6 +49,7 @@ namespace EFCoreComputedColumnProblem
 
     public class BloggingContext : DbContext
     {
+        #region --- Configurations ---
         private readonly ILoggerFactory Logger
             = LoggerFactory.Create(c => c.AddConsole());
 
@@ -60,13 +61,13 @@ namespace EFCoreComputedColumnProblem
                 .UseLoggerFactory(Logger)
                 .EnableSensitiveDataLogging()
                 .UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=Test;ConnectRetryCount=0");
+        #endregion
 
         public override int SaveChanges()
         {
             foreach (var entry in ChangeTracker.Entries().Where(e => e.Properties.Any(p => p.Metadata.Name == "IsDeleted") && e.State == EntityState.Deleted))
             {
                 entry.State = EntityState.Modified;
-                entry.CurrentValues["IsDeleted"] = true;
             }
 
             return base.SaveChanges();
@@ -79,6 +80,7 @@ namespace EFCoreComputedColumnProblem
     {
         public static async Task Main()
         {
+            #region --- Setup ---
             using (var context = new BloggingContext())
             {
                 context.Database.EnsureDeleted();
@@ -93,6 +95,7 @@ namespace EFCoreComputedColumnProblem
             }
 
             Console.Clear();
+            #endregion
 
             using (var context = new BloggingContext())
             {
